@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@nuxt/icon": "2.2.1",
+    "@nuxtjs/color-mode": "^4.0.0",
     "@tailwindcss/vite": "^4.2.4",
     "nuxt": "^4.4.2",
     "tailwindcss": "^4.2.4",
@@ -25,7 +26,9 @@
     "@nuxt/eslint": "^1.15.2",
     "daisyui": "^5.5.19",
     "eslint": "^10.2.0",
-    "lint-staged": "^16.4.0"
+    "eslint-plugin-format": "^2.0.1",
+    "lint-staged": "^16.4.0",
+    "typescript": "^6.0.3"
   },
   "lint-staged": {
     "*": "yarn lint"

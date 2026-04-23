@@ -7,6 +7,7 @@
     </div>
 
     <div class="navbar-end">
+      <AppThemeToggle />
       <a class="btn btn-accent">登录</a>
     </div>
   </div>

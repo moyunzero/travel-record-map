@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['./app/assets/css/main.css'],
-  modules: ['@nuxt/eslint', '@nuxt/icon'],
+  modules: ['@nuxt/eslint', '@nuxt/icon', '@nuxtjs/color-mode'],
   vite: {
     plugins: [
       tailwindcss(),
@@ -16,5 +16,8 @@ export default defineNuxtConfig({
         '@vue/devtools-kit',
       ],
     },
+  },
+  colorMode: {
+    dataValue: 'theme',
   },
 })
