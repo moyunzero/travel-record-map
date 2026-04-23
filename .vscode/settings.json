@@ -10,7 +10,7 @@
   },
 
   "files.associations": {
-    "*css":"tailwindcss"
+    "*css": "tailwindcss"
   },
 
   // Silent the stylistic rules in your IDE, but still auto fix them
@@ -51,5 +51,6 @@
     "scss",
     "pcss",
     "postcss"
-  ]
+  ],
+  "nuxt.isNuxtApp": false
 }
