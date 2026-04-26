@@ -8,9 +8,7 @@
         <p class="py-6">
           记录你的旅行足迹，分享你的旅行故事。
         </p>
-        <button class="btn btn-accent">
-          开始记录
-        </button>
+        <AuthButton />
       </div>
     </div>
   </div>

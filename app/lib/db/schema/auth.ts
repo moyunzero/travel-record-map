@@ -9,18 +9,18 @@ export const user = sqliteTable('user', {
     .default(false)
     .notNull(),
   image: text(),
-  createdAt: integer().notNull(),
-  updatedAt: integer().notNull(),
+  createdAt: integer({ mode: 'timestamp' }).notNull(),
+  updatedAt: integer({ mode: 'timestamp' }).notNull(),
 })
 
 export const session = sqliteTable(
   'session',
   {
     id: int().primaryKey({ autoIncrement: true }),
-    expiresAt: integer().notNull(),
+    expiresAt: integer({ mode: 'timestamp' }).notNull(),
     token: text().notNull().unique(),
-    createdAt: integer().notNull(),
-    updatedAt: integer().notNull(),
+    createdAt: integer({ mode: 'timestamp' }).notNull(),
+    updatedAt: integer({ mode: 'timestamp' }).notNull(),
     ipAddress: text(),
     userAgent: text(),
     userId: text()
@@ -42,12 +42,12 @@ export const account = sqliteTable(
     accessToken: text(),
     refreshToken: text(),
     idToken: text(),
-    accessTokenExpiresAt: integer(),
-    refreshTokenExpiresAt: integer(),
+    accessTokenExpiresAt: integer({ mode: 'timestamp' }),
+    refreshTokenExpiresAt: integer({ mode: 'timestamp' }),
     scope: text(),
     password: text(),
-    createdAt: integer().notNull(),
-    updatedAt: integer().notNull(),
+    createdAt: integer({ mode: 'timestamp' }).notNull(),
+    updatedAt: integer({ mode: 'timestamp' }).notNull(),
   },
   table => [index('account_userId_idx').on(table.userId)],
 )
@@ -58,9 +58,9 @@ export const verification = sqliteTable(
     id: int().primaryKey({ autoIncrement: true }),
     identifier: text().notNull(),
     value: text().notNull(),
-    expiresAt: integer().notNull(),
-    createdAt: integer().notNull(),
-    updatedAt: integer().notNull(),
+    expiresAt: integer({ mode: 'timestamp' }).notNull(),
+    createdAt: integer({ mode: 'timestamp' }).notNull(),
+    updatedAt: integer({ mode: 'timestamp' }).notNull(),
   },
   table => [index('verification_identifier_idx').on(table.identifier)],
 )
