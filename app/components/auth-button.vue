@@ -5,7 +5,8 @@ const authStore = useAuthStore();
 </script>
 
 <template>
-  <div v-if="!authStore.loading && authStore.user" class="dropdown dropdown-end">
+  <!-- 已登录状态：显示用户下拉菜单 -->
+  <div v-if="authStore.user" class="dropdown dropdown-end">
     <div class="avatar avatar-online mr-2">
       <div v-if="authStore.user.image" class="w-8 rounded-full">
         <img :src="authStore.user.image" :alt="authStore.user.name" />
@@ -20,11 +21,17 @@ const authStore = useAuthStore();
         退出登录
       </NuxtLink></li>
     </ul>
-  </div>  
+  </div>
+  <!-- 未登录状态：显示登录按钮 -->
   <button v-else class="btn btn-accent" @click="authStore.signIn" :disabled="authStore.loading">
-    使用 GitHub 登录
-    <span v-if="authStore.loading" class="loading loading-ring loading-md"></span>
-    <Icon v-else name="tabler:brand-github" size="24" />
+    <template v-if="authStore.loading">
+      <span class="loading loading-ring loading-md"></span>
+      加载中...
+    </template>
+    <template v-else>
+      使用 GitHub 登录
+      <Icon name="tabler:brand-github" size="24" />
+    </template>
   </button>
 </template>
 

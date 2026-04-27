@@ -18,7 +18,6 @@
 </template>
 
 <script lang="ts" setup>
-import { N } from 'vue-router/dist/index-D_VEAp3P.js';
 import { useAuthStore } from '../../stores/auth';
 
 const authStore = useAuthStore();
