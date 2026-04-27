@@ -8,8 +8,19 @@
         <p class="py-6">
           记录你的旅行足迹，分享你的旅行故事。
         </p>
-        <AuthButton />
+        <AuthButton v-if="!authStore.user" />
+        <NuxtLink v-else to="/dashboard" class="btn btn-primary">
+          查看我的旅行记录 
+        </NuxtLink> 
       </div>
     </div>
   </div>
 </template>
+
+<script lang="ts" setup>
+import { N } from 'vue-router/dist/index-D_VEAp3P.js';
+import { useAuthStore } from '../../stores/auth';
+
+const authStore = useAuthStore();
+
+</script>
