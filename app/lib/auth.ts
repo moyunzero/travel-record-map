@@ -12,6 +12,10 @@ export const auth = betterAuth({
     database: {
       generateId: 'serial', // Use serial (auto-increment) IDs
     },
+    // 增加超时时间到 30 秒
+    fetchOptions: {
+      timeout: 30000,
+    },
   },
   socialProviders: {
     github: { 
