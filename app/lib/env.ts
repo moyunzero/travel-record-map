@@ -1,6 +1,6 @@
 /// <reference types="node" />
-import { z } from 'zod';
-import tryParseEnv from './try-parse-env';
+import { z } from "zod";
+import tryParseEnv from "./try-parse-env";
 
 const envSchema = z.object({
   NODE_ENV: z.string(),
@@ -10,10 +10,10 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string(),
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
-})
+});
 
-export type EnvSchema = z.infer<typeof envSchema>
+export type EnvSchema = z.infer<typeof envSchema>;
 
-tryParseEnv(envSchema)
+tryParseEnv(envSchema);
 
-export default envSchema.parse(process.env)
+export default envSchema.parse(process.env);
