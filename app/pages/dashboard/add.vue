@@ -14,10 +14,12 @@ const { handleSubmit, errors, meta } = useForm({
 const router = useRouter();
 const loading = ref(false);
 const submitted = ref(false);
+const errorMessage = ref<string | null>(null);
 
 const onSubmit = handleSubmit(async (values) => {
   try {
     loading.value = true;
+    errorMessage.value = null;
     const inserted = await $csrfFetch("/api/location", {
       method: "POST",
       body: values,
@@ -27,11 +29,21 @@ const onSubmit = handleSubmit(async (values) => {
   }
   catch (e) {
     const error = e as FetchError;
-    console.error("添加地点失败", error.statusMessage);
-    return;
-  }
 
-  loading.value = false;
+    // 显示友好的错误信息
+    if (error.statusCode === 409) {
+      errorMessage.value = error.data?.statusMessage || error.statusMessage || "该地点已存在";
+    }
+    else if (error.statusCode === 422) {
+      errorMessage.value = "请检查输入的数据是否正确";
+    }
+    else {
+      errorMessage.value = "添加地点失败，请稍后重试";
+    }
+  }
+  finally {
+    loading.value = false;
+  }
 });
 
 onBeforeRouteLeave(() => {
@@ -55,6 +67,13 @@ onBeforeRouteLeave(() => {
         添加你旅行过的地点，记录你的旅行足迹
       </p>
     </div>
+
+    <!-- 错误提示 -->
+    <div v-if="errorMessage" class="alert alert-error mb-4">
+      <Icon name="tabler:alert-circle" size="20" />
+      <span>{{ errorMessage }}</span>
+    </div>
+
     <form class="flex flex-col gap-2" @submit.prevent="onSubmit">
       <AppFormField
         label="名称"
@@ -108,7 +127,3 @@ onBeforeRouteLeave(() => {
     </form>
   </div>
 </template>
-
-function onBeforeRouteLeave(arg0: () => boolean) {
-  throw new Error("Function not implemented.");
-}
