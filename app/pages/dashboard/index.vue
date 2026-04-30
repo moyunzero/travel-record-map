@@ -1,6 +1,12 @@
 <script lang="ts" setup>
-const { data, status } = await useFetch("/api/location", {
-  lazy: true,
+import { storeToRefs } from "pinia";
+import { useLocationStore } from "../../../stores/locations";
+
+const locationStore = useLocationStore();
+const { locations, status } = storeToRefs(locationStore);
+
+onMounted(() => {
+  locationStore.refresh();
 });
 </script>
 
@@ -12,10 +18,10 @@ const { data, status } = await useFetch("/api/location", {
     <div v-if="status === 'pending'">
       <span class="loading loading-ring loading-md" />
     </div>
-    <div v-else-if="data && data.length > 0" class="flex flex-wrap mt-4 gap-4">
+    <div v-else-if="locations && locations.length > 0" class="flex flex-wrap mt-4 gap-4">
       <!-- TODO:描述过长会溢出卡片，待处理 -->
       <div
-        v-for="location in data"
+        v-for="location in locations"
         :key="location.id"
         class="card card-compact bg-base-300 w-72 h-40"
       >
@@ -24,15 +30,6 @@ const { data, status } = await useFetch("/api/location", {
             {{ location.name }}
           </h3>
           <p>{{ location.description }}</p>
-          <!-- <div class="card-actions justify-end">
-                    <NuxtLink
-                      class="btn btn-primary"
-                      :to="`/dashboard/${location.id}`"
-                    >
-                      查看详情
-                      <Icon name="tabler:eye" size="24"/>
-                    </NuxtLink>
-                </div> -->
         </div>
       </div>
     </div>

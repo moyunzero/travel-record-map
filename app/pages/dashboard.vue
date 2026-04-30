@@ -1,10 +1,18 @@
 <script lang="ts" setup>
 import { ref } from "vue";
+import { useLocationStore } from "../../stores/locations";
+import { useSidebarStore } from "../../stores/sidebar";
 
 const isSidebarOpen = ref(true);
+const sidebarStore = useSidebarStore();
+const route = useRoute();
+const locationStore = useLocationStore();
 
 onMounted(() => {
   isSidebarOpen.value = localStorage.getItem("isSidebarOpen") === "true";
+  if (route.path !== "/dashboard") {
+    locationStore.refresh();
+  }
 });
 
 function toggleSidebar() {
@@ -42,19 +50,39 @@ function toggleSidebar() {
       </div>
       <div class="flex flex-col">
         <SidebarButton
+          key="static-dashboard"
           :show-label="isSidebarOpen"
           label="地点位置"
           icon="tabler:map"
           href="/dashboard"
         />
         <SidebarButton
+          key="static-add"
           :show-label="isSidebarOpen"
           label="添加地点"
           icon="tabler:circle-plus-filled"
           href="/dashboard/add"
         />
+        <div v-if="sidebarStore.loading || sidebarStore.sidebarItems.length" class="divider" />
+
+        <div v-if="sidebarStore.loading" class="px-4">
+          <div class="skeleton h-4 w-full" />
+        </div>
+
+        <div v-if="sidebarStore.sidebarItems.length && !sidebarStore.loading" class="flex flex-col ">
+          <SidebarButton
+            v-for="item in sidebarStore.sidebarItems"
+            :key="`sidebar-${item.id}`"
+            :show-label="isSidebarOpen"
+            :label="item.label"
+            :icon="item.icon"
+            :href="item.href"
+          />
+        </div>
+
         <div class="divider" />
         <SidebarButton
+          key="static-logout"
           :show-label="isSidebarOpen"
           label="退出登录"
           icon="tabler:logout"
