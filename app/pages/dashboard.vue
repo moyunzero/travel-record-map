@@ -25,15 +25,14 @@ function toggleSidebar() {
   <div class="flex-1 flex">
     <!-- 折叠区域 -->
     <div
-      class="bg-base-100 transition-all duration-300 ease-in-out"
+      class="bg-base-100 transition-all duration-300 ease-in-out shrink-0"
       :class="{
         'w-64': isSidebarOpen,
         'w-16': !isSidebarOpen,
       }"
     >
       <div
-        class="flex p-2
-                hover:cursor-pointer hover:bg-base-300"
+        class="flex p-2 hover:cursor-pointer hover:bg-base-300"
         :class="{ 'justify-center': !isSidebarOpen, 'justify-end': isSidebarOpen }"
         @click="toggleSidebar"
       >
@@ -91,9 +90,11 @@ function toggleSidebar() {
       </div>
     </div>
     <!-- 主内容区域 -->
-    <div class="flex-1 flex flex-col">
-      <NuxtPage />
-      <AppMap class="flex-1" />
+    <div class="flex-1 overflow-auto">
+      <div class="flex flex-col size-full">
+        <NuxtPage />
+        <AppMap class="flex-1" />
+      </div>
     </div>
   </div>
 </template>
