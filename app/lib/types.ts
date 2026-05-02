@@ -1,9 +1,9 @@
 import type { UserWithId } from "./auth";
 
 declare module "h3" {
-  type H3EventContext = {
+  interface H3EventContext  {
     user?: UserWithId;
-  };
+  }
 }
 
 export type LatLongItem = {
@@ -13,5 +13,6 @@ export type LatLongItem = {
 
 export type MapPoint = {
   id: number;
-  label: string;
+  name: string;
+  description: string | null;
 } & LatLongItem;

@@ -1,9 +1,12 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { useLocationStore } from "../../../stores/locations";
+import { useMapStore } from "../../../stores/map";
 
 const locationStore = useLocationStore();
 const { locations, status } = storeToRefs(locationStore);
+
+const mapStore = useMapStore();
 
 onMounted(() => {
   locationStore.refresh();
@@ -23,7 +26,13 @@ onMounted(() => {
       <div
         v-for="location in locations"
         :key="location.id"
-        class="card card-compact bg-base-300 w-72 h-40 shrink-0"
+        class="card card-compact bg-base-300 w-72 h-40 border-2  mb-2 shrink-0 hover:cursor-pointer hover:bg-base-200 transition-colors duration-300"
+        :class="{
+          'border-accent': location.id === mapStore.selectedPoint?.id,
+          'border-transparent': !mapStore.selectedPoint || location.id !== mapStore.selectedPoint.id,
+        }"
+        @mouseenter="mapStore.selectedPoint = location"
+        @mouseleave="mapStore.selectedPoint = null"
       >
         <div class="card-body">
           <h3 class="text-xl">

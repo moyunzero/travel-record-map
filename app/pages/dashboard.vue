@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import { useLocationStore } from "../../stores/locations";
+import { useMapStore } from "../../stores/map";
 import { useSidebarStore } from "../../stores/sidebar";
 
 const isSidebarOpen = ref(true);
 const sidebarStore = useSidebarStore();
 const route = useRoute();
 const locationStore = useLocationStore();
+const mapStore = useMapStore();
 
 onMounted(() => {
   isSidebarOpen.value = localStorage.getItem("isSidebarOpen") === "true";
@@ -76,6 +78,9 @@ function toggleSidebar() {
             :label="item.label"
             :icon="item.icon"
             :href="item.href"
+            :icon-color="mapStore.selectedPoint === item.location ? 'text-accent' : undefined"
+            @mouseenter="mapStore.selectedPoint = item.location ?? null"
+            @mouseleave="mapStore.selectedPoint = null"
           />
         </div>
 

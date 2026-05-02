@@ -4,6 +4,7 @@ const props = defineProps<{
   icon: string;
   href: string;
   showLabel: boolean;
+  iconColor?: "text-accent" | "text-primary" | "text-secondary";
 }>();
 
 const route = useRoute();
@@ -39,6 +40,7 @@ watch(() => props.showLabel, (newVal) => {
         :name="props.icon"
         size="24"
         class="flex-shrink-0"
+        :class="iconColor"
       />
       <span
         v-show="props.showLabel"
