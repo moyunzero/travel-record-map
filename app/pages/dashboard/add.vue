@@ -5,6 +5,7 @@ import { useForm } from "vee-validate";
 import { nextTick, ref } from "vue";
 import { DEFAULT_CENTER } from "~/lib/constants";
 import { InsertLocation } from "~/lib/db/schema";
+import { extractShortLocationName, formatCoordinate } from "~/lib/location-utils";
 import { useMapStore } from "../../../stores/map";
 
 const { $csrfFetch } = useNuxtApp();
@@ -14,8 +15,8 @@ const { handleSubmit, errors, meta, setFieldValue, controlledValues } = useForm(
   initialValues: {
     name: "",
     description: "",
-    long: (DEFAULT_CENTER as [number, number])[0],
-    lat: (DEFAULT_CENTER as [number, number])[1],
+    long: DEFAULT_CENTER[0],
+    lat: DEFAULT_CENTER[1],
   },
 });
 
@@ -26,10 +27,11 @@ const errorMessage = ref<string | null>(null);
 const mapStore = useMapStore();
 
 const onSubmit = handleSubmit(async (values) => {
+  loading.value = true;
+  errorMessage.value = null;
+
   try {
-    loading.value = true;
-    errorMessage.value = null;
-    const inserted = await $csrfFetch("/api/location", {
+    await $csrfFetch("/api/location", {
       method: "POST",
       body: values,
     });
@@ -55,12 +57,6 @@ const onSubmit = handleSubmit(async (values) => {
   }
 });
 
-function formatNumber(value?: number) {
-  if (!value)
-    return 0;
-  return value.toFixed(5);
-};
-
 effect(() => {
   if (mapStore.addedPoint) {
     setFieldValue("long", mapStore.addedPoint.long);
@@ -75,14 +71,26 @@ onMounted(() => {
   // 使用 nextTick 确保在 DOM 更新后设置 addedPoint
   nextTick(() => {
     mapStore.addedPoint = {
-      id: 1,
+      id: mapStore.TEMP_POINT_ID,
       name: "增加地点",
       description: "",
-      long: (DEFAULT_CENTER as [number, number])[0],
-      lat: (DEFAULT_CENTER as [number, number])[1],
+      long: DEFAULT_CENTER[0],
+      lat: DEFAULT_CENTER[1],
     };
   });
 });
+
+// 处理搜索结果选择
+function handleLocationSelect(location: { lat: number; lon: number; name: string }) {
+  // 更新地图标记位置并触发 flyTo（表单字段会通过 effect 自动同步）
+  mapStore.setAddedPointLocation(location.lat, location.lon, true);
+
+  // 如果名称字段为空，自动填充搜索结果的名称
+  const currentName = controlledValues.value.name;
+  if (!currentName) {
+    setFieldValue("name", extractShortLocationName(location.name));
+  }
+}
 
 onBeforeRouteLeave(() => {
   if (!submitted.value && meta.value.dirty) {
@@ -127,6 +135,10 @@ onBeforeRouteLeave(() => {
         type="textarea"
         :disabled="loading"
       />
+
+      <!-- 地点搜索组件 -->
+      <AppLocationSearch @select-location="handleLocationSelect" />
+
       <div class="bg-base-200 rounded-lg p-4 space-y-2">
         <div class="flex items-center gap-2 text-sm">
           <Icon
@@ -149,7 +161,7 @@ onBeforeRouteLeave(() => {
           <li>• 或双击地图直接定位</li>
         </ul>
         <div class="text-xs text-base-content/60 ml-7">
-          当前坐标：{{ formatNumber(controlledValues.long) }}, {{ formatNumber(controlledValues.lat) }}
+          当前坐标：{{ formatCoordinate(controlledValues.long as number) }}, {{ formatCoordinate(controlledValues.lat as number) }}
         </div>
       </div>
       <!-- TODO:经纬度表单处理 -->

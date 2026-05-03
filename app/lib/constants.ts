@@ -1,1 +1,1 @@
-export const DEFAULT_CENTER = [116.391213, 39.907270];
+export const DEFAULT_CENTER: [number, number] = [116.391213, 39.907270];

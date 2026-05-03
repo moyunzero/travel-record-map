@@ -3,21 +3,23 @@ import type { LngLat } from "maplibre-gl";
 import { DEFAULT_CENTER } from "~/lib/constants";
 import { useMapStore } from "../../../stores/map";
 
+const MAP_ZOOM = 10;
+
 const colorMode = useColorMode();
-const style = computed(() => {
-  return colorMode.value === "dark" ? "./styles/dark.json" : "https://tiles.openfreemap.org/styles/liberty";
-});
-const zoom = 10;
 const mapStore = useMapStore();
 
+const style = computed(() => {
+  return colorMode.value === "dark"
+    ? "./styles/dark.json"
+    : "https://tiles.openfreemap.org/styles/liberty";
+});
+
 // 使用固定的初始中心，不随 addedPoint 变化
-const initialCenter = ref(DEFAULT_CENTER);
+const initialCenter = ref<[number, number]>(DEFAULT_CENTER);
 
 function updateAddedPoint(location: LngLat) {
-  if (mapStore.addedPoint) {
-    mapStore.addedPoint.lat = location.lat;
-    mapStore.addedPoint.long = location.lng;
-  }
+  // 拖拽时不触发 flyTo
+  mapStore.setAddedPointLocation(location.lat, location.lng, false);
 }
 
 function onDoubleClick(event: any) {
@@ -26,9 +28,9 @@ function onDoubleClick(event: any) {
 
   // nuxt-maplibre wraps the MapLibre event in event.event
   const lngLat = event.event?.lngLat;
-  if (mapStore.addedPoint && lngLat) {
-    mapStore.addedPoint.lat = lngLat.lat;
-    mapStore.addedPoint.long = lngLat.lng;
+  if (lngLat) {
+    // 双击时不触发 flyTo，只更新位置
+    mapStore.setAddedPointLocation(lngLat.lat, lngLat.lng, false);
   }
 }
 
@@ -41,7 +43,7 @@ onMounted(() => {
   <MglMap
     :map-style="style"
     :center="initialCenter"
-    :zoom="zoom"
+    :zoom="MAP_ZOOM"
     @map:dblclick="onDoubleClick"
   >
     <MglNavigationControl />
@@ -76,8 +78,7 @@ onMounted(() => {
           :class="{
             'tooltip-open': mapStore.selectedPoint === point,
           }"
-          @mouseenter="mapStore.selectPointWithoutFlyTo(point)"
-          @mouseleave="mapStore.selectPointWithoutFlyTo(null)"
+          @click="mapStore.clickPoint(point)"
         >
           <Icon
             name="tabler:map-pin-filled"

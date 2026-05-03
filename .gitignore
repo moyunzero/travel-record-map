@@ -26,3 +26,5 @@ logs
 local.db*
 # Drizzle migrations
 app/lib/db/migrations/
+
+.kiro/

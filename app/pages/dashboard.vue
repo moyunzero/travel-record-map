@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { ref } from "vue";
 import { useLocationStore } from "../../stores/locations";
 import { useMapStore } from "../../stores/map";
 import { useSidebarStore } from "../../stores/sidebar";
+
+const SIDEBAR_STORAGE_KEY = "isSidebarOpen";
 
 const isSidebarOpen = ref(true);
 const sidebarStore = useSidebarStore();
@@ -11,7 +12,7 @@ const locationStore = useLocationStore();
 const mapStore = useMapStore();
 
 onMounted(() => {
-  isSidebarOpen.value = localStorage.getItem("isSidebarOpen") === "true";
+  isSidebarOpen.value = localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
   if (route.path !== "/dashboard") {
     locationStore.refresh();
   }
@@ -19,7 +20,7 @@ onMounted(() => {
 
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value;
-  localStorage.setItem("isSidebarOpen", isSidebarOpen.value.toString());
+  localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isSidebarOpen.value));
 }
 </script>
 
@@ -70,17 +71,16 @@ function toggleSidebar() {
           <div class="skeleton h-4 w-full" />
         </div>
 
-        <div v-if="sidebarStore.sidebarItems.length && !sidebarStore.loading" class="flex flex-col ">
+        <div v-if="sidebarStore.sidebarItems.length && !sidebarStore.loading" class="flex flex-col">
           <SidebarButton
             v-for="item in sidebarStore.sidebarItems"
             :key="`sidebar-${item.id}`"
             :show-label="isSidebarOpen"
             :label="item.label"
             :icon="item.icon"
-            :href="item.href"
+            :href="item.href || '#'"
             :icon-color="mapStore.selectedPoint === item.location ? 'text-accent' : undefined"
-            @mouseenter="mapStore.selectedPoint = item.location ?? null"
-            @mouseleave="mapStore.selectedPoint = null"
+            @click="mapStore.clickPoint(item.location ?? null)"
           />
         </div>
 

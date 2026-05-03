@@ -1,6 +1,20 @@
 import type { LngLatBounds } from "maplibre-gl";
 import type { MapPoint } from "~/lib/types";
 
+// 地图动画配置常量
+const MAP_ANIMATION = {
+  INITIAL_ZOOM: 6,
+  SEARCH_ZOOM: 14,
+  SELECT_ZOOM: 12,
+  INITIAL_SPEED: 0.8,
+  SEARCH_SPEED: 1.2,
+  PADDING: 50,
+  INIT_DELAY: 100,
+} as const;
+
+// 临时点的默认 ID
+const TEMP_POINT_ID = -1;
+
 export const useMapStore = defineStore("useMapStore", () => {
   const mapPoints = ref<MapPoint[]>([]);
   const selectedPoint = ref<MapPoint | null>(null);
@@ -10,6 +24,21 @@ export const useMapStore = defineStore("useMapStore", () => {
   function selectPointWithoutFlyTo(point: MapPoint | null) {
     shouldFlyTo.value = false;
     selectedPoint.value = point;
+  }
+
+  // 点击标记时调用（平移+缩放）
+  function clickPoint(point: MapPoint | null) {
+    shouldFlyTo.value = true;
+    selectedPoint.value = point;
+  }
+
+  // 设置 addedPoint 位置，可选择是否触发 flyTo 动画
+  function setAddedPointLocation(lat: number, long: number, withFlyTo = true) {
+    if (addedPoint.value) {
+      shouldFlyTo.value = withFlyTo;
+      addedPoint.value.lat = lat;
+      addedPoint.value.long = long;
+    }
   }
 
   async function init() {
@@ -23,58 +52,70 @@ export const useMapStore = defineStore("useMapStore", () => {
       const firstPoint = mapPoints.value[0];
       if (!firstPoint)
         return;
-      bounds = mapPoints.value.reduce((bounds, point) => {
-        return bounds.extend([point.long, point.lat]);
+      bounds = mapPoints.value.reduce((acc, point) => {
+        return acc.extend([point.long, point.lat]);
       }, new LngLatBounds(
         [firstPoint.long, firstPoint.lat],
         [firstPoint.long, firstPoint.lat],
       ));
-      map.map?.fitBounds(bounds, {
-        padding: 50,
-        // maxZoom: 15,
-      });
+      if (bounds) {
+        map.map?.fitBounds(bounds, {
+          padding: MAP_ANIMATION.PADDING,
+        });
+      }
     });
 
     // 监听 addedPoint 的变化，优先级最高
     watch(addedPoint, (newValue, oldValue) => {
       if (newValue && !oldValue) {
-        // TODO:调试待删除
+        // 首次添加点时飞行到该位置
         console.log("flyTo addedPoint:", newValue.long, newValue.lat);
-        // 使用 setTimeout 确保地图已经完全加载
         setTimeout(() => {
           map.map?.flyTo({
             center: [newValue.long, newValue.lat],
-            speed: 0.8,
-            zoom: 6,
+            speed: MAP_ANIMATION.INITIAL_SPEED,
+            zoom: MAP_ANIMATION.INITIAL_ZOOM,
           });
-        }, 100);
+        }, MAP_ANIMATION.INIT_DELAY);
       }
     }, {
       immediate: true,
-      deep: false, // 不深度监听，只监听引用变化
+      deep: false,
     });
+
+    // 监听 addedPoint 的坐标变化（用于搜索结果设置位置）
+    watch(
+      () => addedPoint.value ? [addedPoint.value.lat, addedPoint.value.long] : null,
+      (newCoords, oldCoords) => {
+        if (!newCoords || !oldCoords || !shouldFlyTo.value)
+          return;
+
+        const [newLat, newLong] = newCoords;
+        const [oldLat, oldLong] = oldCoords;
+
+        // 只有坐标真正变化时才飞行
+        if (newLat !== oldLat || newLong !== oldLong) {
+          console.log("flyTo updated addedPoint:", newLong, newLat);
+          map.map?.flyTo({
+            center: [newLong, newLat],
+            speed: MAP_ANIMATION.SEARCH_SPEED,
+            zoom: MAP_ANIMATION.SEARCH_ZOOM,
+          });
+        }
+      },
+    );
 
     // 监听 selectedPoint 的变化
     effect(() => {
       // 如果正在添加点，不执行 selectedPoint 的 flyTo
-      if (addedPoint.value)
+      if (addedPoint.value || !selectedPoint.value || !shouldFlyTo.value)
         return;
 
-      if (selectedPoint.value) {
-        if (shouldFlyTo.value) {
-          map.map?.flyTo({
-            center: [selectedPoint.value.long, selectedPoint.value.lat],
-            zoom: 12,
-          });
-        }
-        shouldFlyTo.value = true;
-      }
-      else if (bounds) {
-        map.map?.fitBounds(bounds, {
-          padding: 50,
-          // maxZoom: 15,
-        });
-      }
+      // 点击时：平移+缩放
+      map.map?.flyTo({
+        center: [selectedPoint.value.long, selectedPoint.value.lat],
+        zoom: MAP_ANIMATION.SELECT_ZOOM,
+      });
     });
   }
 
@@ -83,6 +124,9 @@ export const useMapStore = defineStore("useMapStore", () => {
     init,
     selectedPoint,
     selectPointWithoutFlyTo,
+    clickPoint,
     addedPoint,
+    setAddedPointLocation,
+    TEMP_POINT_ID,
   };
 });
