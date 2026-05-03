@@ -1,10 +1,11 @@
+import type { SidebarItem } from "./sidebar";
 import type { MapPoint } from "~/lib/types";
 import { useMapStore } from "./map";
 import { useSidebarStore } from "./sidebar";
 
-type LocationResponse = {
+interface LocationResponse extends MapPoint {
   // 添加其他可能的字段
-} & MapPoint;
+}
 
 export const useLocationStore = defineStore("useLocationStore", () => {
   const { data, status, refresh } = useFetch<LocationResponse[]>("/api/location", {
@@ -16,14 +17,23 @@ export const useLocationStore = defineStore("useLocationStore", () => {
 
   watchEffect(() => {
     if (data.value && data.value.length > 0) {
-      sidebarStore.sidebarItems = data.value.map(location => ({
-        id: `location-${location.id}`,
-        label: location.name,
-        icon: "tabler:map-pin-filled",
-        href: "#",
-        location,
-      }));
-      mapStore.mapPoints = data.value;
+      const mapPoints: MapPoint[] = [];
+      const sidebarItems: SidebarItem[] = [];
+
+      data.value.forEach((location) => {
+        const mapPoint = createMapPointFromLocation(location);
+        sidebarItems.push({
+          id: `location-${location.id}`,
+          label: location.name,
+          icon: "tabler:map-pin-filled",
+          to: { name: "dashboard-location-slug", params: { slug: location.slug } },
+          mapPoint,
+        });
+        mapPoints.push(mapPoint);
+      });
+
+      sidebarStore.sidebarItems = sidebarItems;
+      mapStore.setAllMapPoints(mapPoints);
     }
     sidebarStore.loading = status.value === "pending";
   });

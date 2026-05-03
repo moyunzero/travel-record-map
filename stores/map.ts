@@ -17,6 +17,7 @@ const TEMP_POINT_ID = -1;
 
 export const useMapStore = defineStore("useMapStore", () => {
   const mapPoints = ref<MapPoint[]>([]);
+  const allMapPoints = ref<MapPoint[]>([]); // 所有地点的备份（用于详情页恢复）
   const selectedPoint = ref<MapPoint | null>(null);
   const shouldFlyTo = ref(true);
   const addedPoint = ref<MapPoint | null>(null);
@@ -41,6 +42,17 @@ export const useMapStore = defineStore("useMapStore", () => {
     }
   }
 
+  // 设置所有地点（由 locationStore 调用）
+  function setAllMapPoints(points: MapPoint[]) {
+    allMapPoints.value = points;
+    mapPoints.value = points;
+  }
+
+  // 恢复所有地点（由详情页调用）
+  function restoreAllMapPoints() {
+    mapPoints.value = allMapPoints.value;
+  }
+
   async function init() {
     const { useMap } = await import("@indoorequal/vue-maplibre-gl");
     const { LngLatBounds } = await import("maplibre-gl");
@@ -61,6 +73,7 @@ export const useMapStore = defineStore("useMapStore", () => {
       if (bounds) {
         map.map?.fitBounds(bounds, {
           padding: MAP_ANIMATION.PADDING,
+          maxZoom: MAP_ANIMATION.SELECT_ZOOM,
         });
       }
     });
@@ -121,12 +134,15 @@ export const useMapStore = defineStore("useMapStore", () => {
 
   return {
     mapPoints,
+    allMapPoints,
     init,
     selectedPoint,
     selectPointWithoutFlyTo,
     clickPoint,
     addedPoint,
     setAddedPointLocation,
+    setAllMapPoints,
+    restoreAllMapPoints,
     TEMP_POINT_ID,
   };
 });

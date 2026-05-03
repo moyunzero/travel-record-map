@@ -1,3 +1,4 @@
+import type { RouteLocationRaw } from "vue-router";
 import type { UserWithId } from "./auth";
 
 declare module "h3" {
@@ -15,4 +16,6 @@ export type MapPoint = {
   id: number;
   name: string;
   description: string | null;
+  to: RouteLocationRaw;
+  toLabel: string;
 } & LatLongItem;

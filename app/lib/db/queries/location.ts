@@ -1,4 +1,5 @@
 import type { InsertLocation } from "~/lib/db/schema";
+import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import slugify from "slugify";
 import db from "~/lib/db";
@@ -61,5 +62,17 @@ export function isLocationNameDuplicateError(error: any): boolean {
 export async function findLocations(userId: number) {
   return db.query.location.findMany({
     where: (location, { eq }) => eq(location.userId, userId),
+  });
+}
+
+export async function findLocation(slug: string, userId: number) {
+  return db.query.location.findFirst({
+    where: and (
+      eq(location.slug, slug),
+      eq(location.userId, userId),
+    ),
+    with: {
+      locationLogs: true,
+    },
   });
 }
