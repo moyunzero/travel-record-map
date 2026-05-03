@@ -2,19 +2,28 @@
 import type { FetchError } from "ofetch";
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
-import { ref } from "vue";
+import { nextTick, ref } from "vue";
+import { DEFAULT_CENTER } from "~/lib/constants";
 import { InsertLocation } from "~/lib/db/schema";
+import { useMapStore } from "../../../stores/map";
 
 const { $csrfFetch } = useNuxtApp();
 
-const { handleSubmit, errors, meta } = useForm({
+const { handleSubmit, errors, meta, setFieldValue, controlledValues } = useForm({
   validationSchema: toTypedSchema(InsertLocation),
+  initialValues: {
+    name: "",
+    description: "",
+    long: (DEFAULT_CENTER as [number, number])[0],
+    lat: (DEFAULT_CENTER as [number, number])[1],
+  },
 });
 
 const router = useRouter();
 const loading = ref(false);
 const submitted = ref(false);
 const errorMessage = ref<string | null>(null);
+const mapStore = useMapStore();
 
 const onSubmit = handleSubmit(async (values) => {
   try {
@@ -46,6 +55,35 @@ const onSubmit = handleSubmit(async (values) => {
   }
 });
 
+function formatNumber(value?: number) {
+  if (!value)
+    return 0;
+  return value.toFixed(5);
+};
+
+effect(() => {
+  if (mapStore.addedPoint) {
+    setFieldValue("long", mapStore.addedPoint.long);
+    setFieldValue("lat", mapStore.addedPoint.lat);
+  }
+});
+
+onMounted(() => {
+  // 清理之前的选中状态，避免影响 flyTo
+  mapStore.selectedPoint = null;
+
+  // 使用 nextTick 确保在 DOM 更新后设置 addedPoint
+  nextTick(() => {
+    mapStore.addedPoint = {
+      id: 1,
+      name: "增加地点",
+      description: "",
+      long: (DEFAULT_CENTER as [number, number])[0],
+      lat: (DEFAULT_CENTER as [number, number])[1],
+    };
+  });
+});
+
 onBeforeRouteLeave(() => {
   if (!submitted.value && meta.value.dirty) {
     const confirm = window.confirm("你有未保存的更改，确定要离开吗？");
@@ -53,12 +91,13 @@ onBeforeRouteLeave(() => {
       return false;
     }
   }
+  mapStore.addedPoint = null;
   return true;
 });
 </script>
 
 <template>
-  <div class="container max-w-md mx-auto">
+  <div class="container max-w-md mx-auto p-4">
     <div class="my-4">
       <h1 class="text-lg">
         添加地点
@@ -88,8 +127,33 @@ onBeforeRouteLeave(() => {
         type="textarea"
         :disabled="loading"
       />
+      <div class="bg-base-200 rounded-lg p-4 space-y-2">
+        <div class="flex items-center gap-2 text-sm">
+          <Icon
+            name="tabler:info-circle"
+            class="text-info"
+            size="20"
+          />
+          <span class="font-medium">设置地点位置</span>
+        </div>
+        <ul class="text-sm space-y-1 ml-7">
+          <li class="flex items-center gap-1">
+            <span>• 拖拽</span>
+            <Icon
+              name="tabler:map-pin-filled"
+              class="text-warning"
+              size="16"
+            />
+            <span>标记到目标位置</span>
+          </li>
+          <li>• 或双击地图直接定位</li>
+        </ul>
+        <div class="text-xs text-base-content/60 ml-7">
+          当前坐标：{{ formatNumber(controlledValues.long) }}, {{ formatNumber(controlledValues.lat) }}
+        </div>
+      </div>
       <!-- TODO:经纬度表单处理 -->
-      <AppFormField
+      <!-- <AppFormField
         label="经度"
         name="long"
         :error="errors.long"
@@ -100,7 +164,7 @@ onBeforeRouteLeave(() => {
         name="lat"
         :error="errors.lat"
         :disabled="loading"
-      />
+      /> -->
       <div class="flex justify-end gap-2 mt-4">
         <button
           type="button"

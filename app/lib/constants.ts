@@ -1,0 +1,1 @@
+export const DEFAULT_CENTER = [116.391213, 39.907270];
