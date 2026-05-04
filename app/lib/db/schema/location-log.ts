@@ -23,3 +23,5 @@ export const locationLogRelations = relations(locationLog, ({ one }) => ({
     references: [location.id],
   }),
 }));
+
+export type SelectLocationLog = typeof locationLog.$inferSelect;

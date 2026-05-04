@@ -1,3 +1,4 @@
+import type { SelectLocationLog } from "./location-log";
 import { relations } from "drizzle-orm";
 import { int, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -56,3 +57,6 @@ export const InsertLocation = createInsertSchema(location, {
 
 export type InsertLocation = z.infer<typeof InsertLocation>;
 export type SelectLocation = typeof location.$inferSelect;
+export type SelectLocationWithLog = SelectLocation & {
+  locationLogs: SelectLocationLog[];
+};

@@ -11,10 +11,85 @@ const route = useRoute();
 const locationStore = useLocationStore();
 const mapStore = useMapStore();
 
+const { currentLocation } = storeToRefs(locationStore);
+
+function updateSidebarItems(routeName: string | null | undefined) {
+  if (routeName === "dashboard") {
+    sidebarStore.sidebarTopItems = [
+      {
+        id: "static-dashboard",
+        label: "位置地点",
+        href: "/dashboard",
+        icon: "tabler:map",
+      },
+      {
+        id: "static-dashboard-add",
+        label: "添加地点",
+        href: "/dashboard/add",
+        icon: "tabler:circle-plus-filled",
+      },
+    ];
+  }
+  else if (routeName === "dashboard-location-slug") {
+    // 优先从 locations 列表中查找，避免等待 currentLocation 异步加载
+    const slug = route.params.slug as string;
+    const location = locationStore.locations?.find(loc => loc.slug === slug)
+      || currentLocation.value;
+
+    sidebarStore.sidebarTopItems = [
+      {
+        id: "static-dashboard-back",
+        label: "返回",
+        href: "/dashboard",
+        icon: "tabler:arrow-left",
+      },
+      {
+        id: "static-dashboard-log",
+        label: location?.name || "查看日志",
+        to: {
+          name: "dashboard-location-slug",
+          params: {
+            slug,
+          },
+        },
+        icon: "tabler:map",
+      },
+      {
+        id: "static-dashboard-log-edit",
+        label: "编辑日志",
+        to: {
+          name: "dashboard-location-slug-edit",
+          params: {
+            slug,
+          },
+        },
+        icon: "tabler:map-pin-cog",
+      },
+      {
+        id: "static-dashboard-log-add",
+        label: "添加日志",
+        to: {
+          name: "dashboard-location-slug-add",
+          params: {
+            slug,
+          },
+        },
+        icon: "tabler:circle-plus-filled",
+      },
+    ];
+  }
+}
+
+watch(
+  [() => route.name, currentLocation, () => locationStore.locations],
+  ([name]) => updateSidebarItems(name as string),
+  { immediate: true },
+);
+
 onMounted(() => {
   isSidebarOpen.value = localStorage.getItem(SIDEBAR_STORAGE_KEY) === "true";
   if (route.path !== "/dashboard") {
-    locationStore.refresh();
+    locationStore.refreshLocations();
   }
 });
 
@@ -52,19 +127,21 @@ function toggleSidebar() {
       </div>
       <div class="flex flex-col">
         <SidebarButton
-          key="static-dashboard"
+          v-for="item in sidebarStore.sidebarTopItems"
+          :key="item.id"
           :show-label="isSidebarOpen"
-          label="地点位置"
-          icon="tabler:map"
-          href="/dashboard"
+          :label="item.label"
+          :icon="item.icon"
+          :href="item.href"
+          :to="item.to"
         />
-        <SidebarButton
+        <!-- <SidebarButton
           key="static-add"
           :show-label="isSidebarOpen"
           label="添加地点"
           icon="tabler:circle-plus-filled"
           href="/dashboard/add"
-        />
+        /> -->
         <div v-if="sidebarStore.loading || sidebarStore.sidebarItems.length" class="divider" />
 
         <div v-if="sidebarStore.loading" class="px-4">

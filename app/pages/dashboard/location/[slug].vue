@@ -1,18 +1,28 @@
 <script lang="ts" setup>
+import { useLocationStore } from "../../../../stores/locations";
 import { useMapStore } from "../../../../stores/map";
 
 const route = useRoute();
-const { slug } = route.params;
 const mapStore = useMapStore();
+const locationStore = useLocationStore();
+const {
+  currentLocation: location,
+  currentLocationStatus: status,
+  currentLocationError: error,
+} = storeToRefs(locationStore);
 
-const { data: location, status, error } = await useFetch(`/api/locations/${slug}`);
+// const { data: location, status, error } = await useFetch(`/api/locations/${slug}`);
 
-effect(() => {
-  if (location.value) {
-    // 只显示当前地点
-    mapStore.mapPoints = [location.value];
-  }
+onMounted(() => {
+  locationStore.refreshCurrentLocation();
 });
+
+// effect(() => {
+//   if (location.value) {
+//     // 只显示当前地点
+//     mapStore.mapPoints = [location.value];
+//   }
+// });
 
 // 离开页面时恢复所有地点
 onBeforeRouteLeave(() => {

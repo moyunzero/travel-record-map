@@ -5,12 +5,12 @@ import { useLocationStore } from "../../../stores/locations";
 import { useMapStore } from "../../../stores/map";
 
 const locationStore = useLocationStore();
-const { locations, status } = storeToRefs(locationStore);
+const { locations, locationStatus: status } = storeToRefs(locationStore);
 
 const mapStore = useMapStore();
 
 onMounted(() => {
-  locationStore.refresh();
+  locationStore.refreshLocations();
 });
 </script>
 
