@@ -11,24 +11,60 @@ const {
   currentLocationError: error,
 } = storeToRefs(locationStore);
 
-// const { data: location, status, error } = await useFetch(`/api/locations/${slug}`);
+const isOpen = ref(false);
+const isDeleting = ref(false);
+const deleteError = ref<string | null>(null);
+
+const { $csrfFetch } = useNuxtApp();
+const router = useRouter();
 
 onMounted(() => {
   locationStore.refreshCurrentLocation();
 });
-
-// effect(() => {
-//   if (location.value) {
-//     // 只显示当前地点
-//     mapStore.mapPoints = [location.value];
-//   }
-// });
 
 // 离开页面时恢复所有地点
 onBeforeRouteLeave(() => {
   mapStore.restoreAllMapPoints();
   return true;
 });
+
+function openDialog() {
+  isOpen.value = true;
+  deleteError.value = null;
+  (document.activeElement as HTMLAnchorElement).blur()
+
+}
+
+async function confirmDelete() {
+  if (isDeleting.value) return;
+  isOpen.value = false;
+
+  isDeleting.value = true;
+  deleteError.value = null;
+
+  try {
+    await $csrfFetch(`/api/locations/${route.params.slug}`, {
+      method: "DELETE",
+    });
+
+    // 删除成功后刷新地点列表并导航回仪表板
+    await locationStore.refreshLocations();
+    await router.push("/dashboard");
+  }
+  catch (error: any) {
+    // 处理错误
+    const message = error.statusCode === 404
+      ? "地点不存在或已被删除"
+      : "删除失败，请稍后重试";
+    
+    deleteError.value = message;
+    console.error("删除地点失败:", error);
+  }
+  finally {
+    isDeleting.value = false;
+  }
+}
+
 </script>
 
 <template>
@@ -46,8 +82,24 @@ onBeforeRouteLeave(() => {
       </p>
     </div>
     <div v-if="location && status !== 'pending'">
+      <!-- TODO:居中 -->
       <h2 class="text-xl">
         {{ location.name }}
+        <div class="dropdown dropdown-bottom">
+          <div tabindex="0" role="button" class="btn m-1 btn-sm p-0">
+            <Icon size="16" name="tabler:dots-vertical" />
+          </div>
+          <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-1 w-52 p-2 shadow-sm">
+            <li><NuxtLink @click="openDialog">
+              <Icon name="tabler:trash-x-filled" size="16" />
+               删除
+            </NuxtLink></li>
+            <li><NuxtLink :to="{name: 'dashboard-location-slug-edit',params: {slug}}">
+              <Icon name="tabler:map-pin-cog" size="16" />
+               编辑
+            </NuxtLink></li>
+          </ul>
+        </div>
       </h2>
       <p class="text-sm">
         {{ location.description }}
@@ -62,6 +114,17 @@ onBeforeRouteLeave(() => {
         <Icon name="tabler:map-pin-plus" size="24" />
       </button>
     </div>
+    <AppDialog  
+      title="你确定吗？"
+      description="这将会删除该地址及其相关日志"
+      confirm-label="确认"
+      confirm-class="btn-error"
+      :is-open="isOpen"
+      :is-loading="isDeleting"
+      :error="deleteError"
+      @on-closed="isOpen = false" 
+      @on-confirmed="confirmDelete"
+    />
   </div>
   <NuxtPage v-else />
 </template>
