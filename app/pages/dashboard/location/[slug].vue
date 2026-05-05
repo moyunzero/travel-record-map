@@ -32,13 +32,22 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <div class="p-4 min-h-64">
+  <div v-if="route.name === 'dashboard-location-slug'" class="p-4 min-h-64">
     <div v-if="status === 'pending'">
       <div class="loading" />
     </div>
+    <div v-if="error && status !== 'pending'" class="flex flex-col gap-4">
+      <div role="alert" class="alert alert-error">
+        <Icon name="tabler:alert-circle" size="24" />
+        <span>{{ error.statusMessage || '地点不存在' }}</span>
+      </div>
+      <p class="text-sm text-base-content/70">
+        您访问的地点不存在或已被删除。请返回查看其他地点。
+      </p>
+    </div>
     <div v-if="location && status !== 'pending'">
       <h2 class="text-xl">
-        地点详情页-{{ location.name }}
+        {{ location.name }}
       </h2>
       <p class="text-sm">
         {{ location.description }}
@@ -53,12 +62,8 @@ onBeforeRouteLeave(() => {
         <Icon name="tabler:map-pin-plus" size="24" />
       </button>
     </div>
-    <div v-if="error && status !== 'pending'">
-      <h2 class="text-lg text-error">
-        {{ error.statusMessage }}
-      </h2>
-    </div>
   </div>
+  <NuxtPage v-else />
 </template>
 
 <style>

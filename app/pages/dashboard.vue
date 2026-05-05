@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { CURRENT_LOCATION_PAGES, EDIT_PAGES, LOCATION_PAGES } from "~/lib/constants";
+import { isPointSelected } from "~/utils/map-point";
 import { useLocationStore } from "../../stores/locations";
 import { useMapStore } from "../../stores/map";
 import { useSidebarStore } from "../../stores/sidebar";
@@ -14,7 +16,10 @@ const mapStore = useMapStore();
 const { currentLocation } = storeToRefs(locationStore);
 
 function updateSidebarItems(routeName: string | null | undefined) {
-  if (routeName === "dashboard") {
+  const currentRouteName = routeName || "";
+
+  if (LOCATION_PAGES.has(currentRouteName)) {
+    // 位置地点页面（dashboard 和 dashboard-add）
     sidebarStore.sidebarTopItems = [
       {
         id: "static-dashboard",
@@ -30,58 +35,72 @@ function updateSidebarItems(routeName: string | null | undefined) {
       },
     ];
   }
-  else if (routeName === "dashboard-location-slug") {
-    // 优先从 locations 列表中查找，避免等待 currentLocation 异步加载
-    const slug = route.params.slug as string;
-    const location = locationStore.locations?.find(loc => loc.slug === slug)
-      || currentLocation.value;
+  else if (CURRENT_LOCATION_PAGES.has(currentRouteName)) {
+    // 当前地点详情页面（查看、编辑、添加日志）
+    // 如果地点加载出错，只显示返回按钮
+    if (locationStore.currentLocationError) {
+      sidebarStore.sidebarTopItems = [
+        {
+          id: "static-dashboard-back",
+          label: "返回",
+          href: "/dashboard",
+          icon: "tabler:arrow-left",
+        },
+      ];
+    }
+    else {
+      // 优先从 locations 列表中查找，避免等待 currentLocation 异步加载
+      const slug = route.params.slug as string;
+      const location = locationStore.locations?.find(loc => loc.slug === slug)
+        || currentLocation.value;
 
-    sidebarStore.sidebarTopItems = [
-      {
-        id: "static-dashboard-back",
-        label: "返回",
-        href: "/dashboard",
-        icon: "tabler:arrow-left",
-      },
-      {
-        id: "static-dashboard-log",
-        label: location?.name || "查看日志",
-        to: {
-          name: "dashboard-location-slug",
-          params: {
-            slug,
-          },
+      sidebarStore.sidebarTopItems = [
+        {
+          id: "static-dashboard-back",
+          label: "返回",
+          href: "/dashboard",
+          icon: "tabler:arrow-left",
         },
-        icon: "tabler:map",
-      },
-      {
-        id: "static-dashboard-log-edit",
-        label: "编辑日志",
-        to: {
-          name: "dashboard-location-slug-edit",
-          params: {
-            slug,
+        {
+          id: "static-dashboard-log",
+          label: location?.name || "查看日志",
+          to: {
+            name: "dashboard-location-slug",
+            params: {
+              slug,
+            },
           },
+          icon: "tabler:map",
         },
-        icon: "tabler:map-pin-cog",
-      },
-      {
-        id: "static-dashboard-log-add",
-        label: "添加日志",
-        to: {
-          name: "dashboard-location-slug-add",
-          params: {
-            slug,
+        {
+          id: "static-dashboard-log-edit",
+          label: "编辑日志",
+          to: {
+            name: "dashboard-location-slug-edit",
+            params: {
+              slug,
+            },
           },
+          icon: "tabler:map-pin-cog",
         },
-        icon: "tabler:circle-plus-filled",
-      },
-    ];
+        {
+          id: "static-dashboard-log-add",
+          label: "添加日志",
+          to: {
+            name: "dashboard-location-slug-add",
+            params: {
+              slug,
+            },
+          },
+          icon: "tabler:circle-plus-filled",
+        },
+      ];
+    }
   }
 }
 
 watch(
-  [() => route.name, currentLocation, () => locationStore.locations],
+  [() => route.name, currentLocation, () => locationStore.locations, () => locationStore.currentLocationError],
   ([name]) => updateSidebarItems(name as string),
   { immediate: true },
 );
@@ -173,7 +192,7 @@ function toggleSidebar() {
     </div>
     <!-- 主内容区域 -->
     <div class="flex-1 overflow-auto bg-base-200">
-      <div class="flex size-full" :class="{ 'flex-col': route.path !== '/dashboard/add' }">
+      <div class="flex size-full" :class="{ 'flex-col':  !EDIT_PAGES.has(route.name?.toString() || '') }">
         <NuxtPage />
         <AppMap class="flex-1" />
       </div>

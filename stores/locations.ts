@@ -3,14 +3,15 @@ import type { SelectLocationWithLog } from "~/lib/db/schema";
 import type { MapPoint } from "~/lib/types";
 import { useMapStore } from "./map";
 import { useSidebarStore } from "./sidebar";
+import { CURRENT_LOCATION_PAGES, LOCATION_PAGES } from "~/lib/constants";
 
 interface LocationResponse extends MapPoint {
   // 添加其他可能的字段
 }
 
-const listLocationsInSidebar = new Set(["dashboard", "dashboard-add"]);
+// const listLocationsInSidebar = new Set(["dashboard", "dashboard-add"]);
 
-const listCurrentLocationInSidebar = new Set(["dashboard-location-slug", "dashboard-location-slug-edit", "dashboard-location-slug-add"]);
+// const listCurrentLocationInSidebar = new Set(["dashboard-location-slug", "dashboard-location-slug-edit", "dashboard-location-slug-add"]);
 
 export const useLocationStore = defineStore("useLocationStore", () => {
   const route = useRoute();
@@ -29,7 +30,7 @@ export const useLocationStore = defineStore("useLocationStore", () => {
   const mapStore = useMapStore();
 
   watchEffect(() => {
-    if (locations.value && locations.value.length > 0 && listLocationsInSidebar.has(route.name?.toString() || null)) {
+    if (locations.value && locations.value.length > 0 && LOCATION_PAGES.has(route.name?.toString() || null)) {
       const mapPoints: MapPoint[] = [];
       const sidebarItems: SidebarItem[] = [];
 
@@ -48,7 +49,7 @@ export const useLocationStore = defineStore("useLocationStore", () => {
       sidebarStore.sidebarItems = sidebarItems;
       mapStore.setAllMapPoints(mapPoints);
     }
-    else if (currentLocation.value && listCurrentLocationInSidebar.has(route.name?.toString() || "")) {
+    else if (currentLocation.value && CURRENT_LOCATION_PAGES.has(route.name?.toString() || "")) {
       sidebarStore.sidebarItems = [];
       mapStore.mapPoints = [currentLocation.value];
     }

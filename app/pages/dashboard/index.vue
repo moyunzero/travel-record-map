@@ -15,19 +15,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-4 min-h-64">
+  <div class="p-4 shrink-0">
     <h2 class="text-2xl">
       打卡地点
     </h2>
     <div v-if="status === 'pending'">
       <span class="loading loading-ring loading-md" />
     </div>
-    <div v-else-if="locations && locations.length > 0" class="flex flex-no-wrap mt-4 gap-4 overflow-auto">
-      <!-- TODO:描述过长会溢出卡片，待处理 -->
+    <div v-else-if="locations && locations.length > 0" class="flex flex-nowrap mt-4 gap-4 overflow-x-auto pb-2">
       <NuxtLink
         v-for="location in locations"
         :key="location.id"
-        class="card card-compact bg-base-300 w-72 h-40 border-2  mb-2 shrink-0 hover:cursor-pointer hover:bg-base-200 transition-colors duration-300"
+        class="bg-base-300 rounded-2xl w-56 shrink-0 p-4 border-2 hover:cursor-pointer hover:bg-base-200 transition-colors duration-300"
         :class="{
           'border-accent': isPointSelected(location, mapStore.selectedPoint),
           'border-transparent': !isPointSelected(location, mapStore.selectedPoint),
@@ -36,12 +35,12 @@ onMounted(() => {
         @mouseenter="mapStore.selectedPoint = location"
         @mouseleave="mapStore.selectedPoint = null"
       >
-        <div class="card-body">
-          <h3 class="text-xl">
-            {{ location.name }}
-          </h3>
-          <p>{{ location.description }}</p>
-        </div>
+        <p class="font-bold text-base truncate mb-2">
+          {{ location.name }}
+        </p>
+        <p class="text-sm text-base-content/70 line-clamp-3">
+          {{ location.description }}
+        </p>
       </NuxtLink>
     </div>
     <div v-else class="flex flex-col gap-2 mt-4">
@@ -58,7 +57,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style>
-
-</style>
