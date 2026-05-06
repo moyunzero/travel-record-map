@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { DEFAULT_CENTER } from "~/lib/constants";
+import { InsertLocation } from "~/lib/db/schema";
 import { useMapStore } from "../../../stores/map";
 
 const router = useRouter();
@@ -53,10 +54,20 @@ function handleCancel() {
       </p>
     </div>
 
-    <LocationForm
+    <LocationBaseForm
       ref="locationFormRef"
       mode="add"
+      :validation-schema="InsertLocation"
+      :initial-values="{
+        name: '',
+        description: '',
+        long: DEFAULT_CENTER[0],
+        lat: DEFAULT_CENTER[1],
+      }"
+      api-url="/api/location"
       submit-button-text="添加地点"
+      :show-location-search="true"
+      coordinate-label="设置地点位置"
       @success="handleSuccess"
       @cancel="handleCancel"
     />

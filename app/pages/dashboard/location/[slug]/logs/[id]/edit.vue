@@ -1,39 +1,38 @@
 <script lang="ts" setup>
-import { InsertLocation } from "~/lib/db/schema";
-import { useLocationStore } from "../../../../../stores/locations";
+import type { SelectLocationLog } from "~/lib/db/schema/location-log";
+import { useLocationStore } from "../../../../../../../stores/locations";
 
 const route = useRoute();
 const router = useRouter();
 const locationStore = useLocationStore();
 
-const { currentLocation: location, currentLocationStatus: status, currentLocationError: error } = storeToRefs(locationStore);
-
 const submitted = ref(false);
-const locationFormRef = ref<InstanceType<typeof LocationBaseForm> | null>(null);
+const locationLogFormRef = ref<InstanceType<typeof LocationLogForm> | null>(null);
 
-// 确保数据已加载（如果从其他页面直接访问编辑页）
-onMounted(async () => {
-  if (!location.value) {
-    await locationStore.refreshCurrentLocation();
-  }
-});
+// 获取日志数据
+const { data: locationLog, status, error } = await useFetch<SelectLocationLog>(
+  `/api/locations/${route.params.slug}/logs/${route.params.id}`,
+);
+
+// 构建 API URL
+const apiUrl = computed(() => `/api/locations/${route.params.slug}/logs/${route.params.id}`);
 
 // 监听数据加载完成后的错误处理
 watchEffect(() => {
   // 只在加载完成后检查错误
-  if (status.value === "success" && !location.value) {
-    // 地点不存在，跳转回 dashboard
-    navigateTo("/dashboard");
+  if (status.value === "success" && !locationLog.value) {
+    // 日志不存在，跳转回地点详情页
+    navigateTo(`/dashboard/location/${route.params.slug}`);
   }
 });
 
-// 地图标记坐标（用于编辑模式）
+// 地图标记坐标（使用日志的坐标）
 const mapCoordinates = computed(() => {
-  if (!location.value)
+  if (!locationLog.value)
     return null;
   return {
-    lat: location.value.lat,
-    long: location.value.long,
+    lat: locationLog.value.lat,
+    long: locationLog.value.long,
   };
 });
 
@@ -42,17 +41,14 @@ useEditMapPoint(mapCoordinates);
 
 // 使用表单路由守卫
 useFormRouteGuard({
-  formRef: locationFormRef,
+  formRef: locationLogFormRef,
   submitted,
 });
 
 async function handleSuccess() {
   submitted.value = true;
-  // 刷新地点数据
-  await Promise.all([
-    locationStore.refreshLocations(),
-    locationStore.refreshCurrentLocation(),
-  ]);
+  // 刷新当前地点数据以显示更新后的日志
+  await locationStore.refreshCurrentLocation();
   // 返回地点详情页
   navigateTo(`/dashboard/location/${route.params.slug}`);
 }
@@ -77,36 +73,28 @@ function handleCancel() {
           加载失败
         </h3>
         <div class="text-sm">
-          {{ error.statusMessage || "无法加载地点信息" }}
+          {{ error.statusMessage || "无法加载日志信息" }}
         </div>
       </div>
     </div>
 
     <!-- 编辑表单 -->
-    <template v-else-if="location">
+    <template v-else-if="locationLog">
       <div class="my-4">
         <h1 class="text-lg">
-          编辑地点
+          编辑日志
         </h1>
         <p class="text-sm">
-          修改地点信息
+          修改你的旅行日志信息
         </p>
       </div>
 
-      <LocationBaseForm
-        ref="locationFormRef"
+      <LocationLogForm
+        ref="locationLogFormRef"
         mode="edit"
-        :validation-schema="InsertLocation"
-        :initial-values="{
-          name: location.name,
-          description: location.description || '',
-          long: location.long,
-          lat: location.lat,
-        }"
-        :api-url="`/api/locations/${route.params.slug}`"
+        :location-log="locationLog"
+        :api-url="apiUrl"
         submit-button-text="保存修改"
-        :show-location-search="true"
-        coordinate-label="设置地点位置"
         @success="handleSuccess"
         @cancel="handleCancel"
       />

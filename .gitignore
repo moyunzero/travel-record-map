@@ -10,8 +10,8 @@ dist
 node_modules
 
 # Logs
-logs
 *.log
+/logs
 
 # Misc
 .DS_Store
@@ -28,3 +28,5 @@ local.db*
 app/lib/db/migrations/
 
 .kiro/
+
+docker-data

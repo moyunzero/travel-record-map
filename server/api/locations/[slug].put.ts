@@ -1,13 +1,13 @@
-import { findLocation, updateLocationBySlug, isLocationNameDuplicateError } from "~/lib/db/queries/location";
-import defineAuthenticatedEventHandler from "~/utils/define-authenticated-event-handler";
+import { findLocation, isLocationNameDuplicateError, updateLocationBySlug } from "~/lib/db/queries/location";
 import { InsertLocation } from "~/lib/db/schema";
+import defineAuthenticatedEventHandler from "~/utils/define-authenticated-event-handler";
 
 export default defineAuthenticatedEventHandler(async (event) => {
   const slug = getRouterParam(event, "slug") as string;
 
   // 验证请求体
   const result = await readValidatedBody(event, InsertLocation.safeParse);
-  
+
   if (!result.success) {
     return sendError(event, createError({
       statusCode: 422,
@@ -17,7 +17,7 @@ export default defineAuthenticatedEventHandler(async (event) => {
 
   // 检查地点是否存在
   const existingLocation = await findLocation(slug, event.context.user.id);
-  
+
   if (!existingLocation) {
     return sendError(event, createError({
       statusCode: 404,
@@ -28,14 +28,14 @@ export default defineAuthenticatedEventHandler(async (event) => {
   try {
     // 更新地点
     const updated = await updateLocationBySlug(result.data, slug, event.context.user.id);
-    
+
     if (!updated) {
       return sendError(event, createError({
         statusCode: 404,
         statusMessage: "更新失败，地点不存在",
       }));
     }
-    
+
     return updated;
   }
   catch (e) {

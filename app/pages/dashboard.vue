@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { CURRENT_LOCATION_PAGES, EDIT_PAGES, LOCATION_PAGES } from "~/lib/constants";
+import { CURRENT_LOCATION_PAGES, EDIT_PAGES, LOCATION_PAGES, LOG_DETAIL_PAGES } from "~/lib/constants";
 import { isPointSelected } from "~/utils/map-point";
 import { useLocationStore } from "../../stores/locations";
 import { useMapStore } from "../../stores/map";
@@ -32,6 +32,54 @@ function updateSidebarItems(routeName: string | null | undefined) {
         label: "添加地点",
         href: "/dashboard/add",
         icon: "tabler:circle-plus-filled",
+      },
+    ];
+  }
+  else if (LOG_DETAIL_PAGES.has(currentRouteName)) {
+    // 日志详情页面（查看、编辑日志）
+    const slug = route.params.slug as string;
+    const logId = route.params.id as string;
+
+    // 优先从 locations 列表中查找
+    const location = locationStore.locations?.find(loc => loc.slug === slug)
+      || currentLocation.value;
+
+    sidebarStore.sidebarTopItems = [
+      {
+        id: "static-dashboard-back-to-location",
+        label: `返回 "${location?.name || "地点"}"`,
+        to: {
+          name: "dashboard-location-slug",
+          params: { slug },
+        },
+        icon: "tabler:arrow-left",
+      },
+      {
+        id: "static-dashboard-log-view",
+        label: "查看日志",
+        to: {
+          name: "dashboard-location-slug-logs-id",
+          params: { slug, id: logId },
+        },
+        icon: "tabler:eye",
+      },
+      {
+        id: "static-dashboard-log-edit",
+        label: "编辑日志",
+        to: {
+          name: "dashboard-location-slug-logs-id-edit",
+          params: { slug, id: logId },
+        },
+        icon: "tabler:edit",
+      },
+      {
+        id: "static-dashboard-log-images",
+        label: "管理图片",
+        to: {
+          name: "dashboard-location-slug-logs-id-images",
+          params: { slug, id: logId },
+        },
+        icon: "tabler:photo",
       },
     ];
   }
@@ -74,7 +122,7 @@ function updateSidebarItems(routeName: string | null | undefined) {
         },
         {
           id: "static-dashboard-log-edit",
-          label: "编辑日志",
+          label: "编辑地点",
           to: {
             name: "dashboard-location-slug-edit",
             params: {
@@ -101,7 +149,35 @@ function updateSidebarItems(routeName: string | null | undefined) {
 
 watch(
   [() => route.name, currentLocation, () => locationStore.locations, () => locationStore.currentLocationError],
-  ([name]) => updateSidebarItems(name as string),
+  ([name]) => {
+    updateSidebarItems(name as string);
+
+    // 如果在日志详情页面，显示该地点的所有日志
+    // 注意：只在日志详情页面时设置侧边栏项目，其他页面由 locationStore 的 watchEffect 管理
+    if (LOG_DETAIL_PAGES.has(name as string) && currentLocation.value?.locationLogs) {
+      const slug = route.params.slug as string;
+      const currentLogId = Number(route.params.id);
+
+      sidebarStore.sidebarItems = currentLocation.value.locationLogs.map(log => ({
+        id: `log-${log.id}`,
+        label: log.name,
+        icon: currentLogId === log.id ? "tabler:map-pin-filled" : "tabler:map-pin",
+        to: {
+          name: "dashboard-location-slug-logs-id",
+          params: { slug, id: log.id },
+        },
+        mapPoint: {
+          id: log.id,
+          name: log.name,
+          description: log.description || "",
+          lat: log.lat,
+          long: log.long,
+          slug: `${log.id}`,
+        },
+      }));
+    }
+    // 不要在这里设置为空数组，让 locationStore 的 watchEffect 管理其他页面的侧边栏
+  },
   { immediate: true },
 );
 
@@ -192,7 +268,7 @@ function toggleSidebar() {
     </div>
     <!-- 主内容区域 -->
     <div class="flex-1 overflow-auto bg-base-200">
-      <div class="flex size-full" :class="{ 'flex-col':  !EDIT_PAGES.has(route.name?.toString() || '') }">
+      <div class="flex size-full" :class="{ 'flex-col': !EDIT_PAGES.has(route.name?.toString() || '') }">
         <NuxtPage />
         <AppMap class="flex-1" />
       </div>

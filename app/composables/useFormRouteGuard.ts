@@ -36,7 +36,7 @@ export function useFormRouteGuard(options: {
 
     // 提示用户确认
     const shouldLeave = window.confirm(confirmMessage);
-    
+
     if (shouldLeave) {
       onLeave?.();
       return true;

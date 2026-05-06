@@ -1,4 +1,3 @@
-
 <script lang="ts" setup>
 import { useTemplateRef } from "vue";
 
@@ -23,7 +22,8 @@ const emit = defineEmits<{
 const dialog = useTemplateRef("dialog");
 
 function onClose() {
-  if (props.isLoading) return; // 防止加载时关闭
+  if (props.isLoading)
+    return; // 防止加载时关闭
   emit("onClosed");
 }
 
@@ -36,11 +36,10 @@ onUnmounted(() => {
 });
 </script>
 
-
 <template>
-  <dialog 
-    ref="dialog" 
-    class="modal" 
+  <dialog
+    ref="dialog"
+    class="modal"
     :open="props.isOpen"
   >
     <div class="modal-box">
@@ -58,16 +57,16 @@ onUnmounted(() => {
       </div>
 
       <div class="flex justify-end gap-2">
-        <button 
-          class="btn btn-outline" 
+        <button
+          class="btn btn-outline"
           :disabled="isLoading"
           @click="onClose"
         >
           取消
         </button>
-        <button 
-          class="btn" 
-          :class="confirmClass" 
+        <button
+          class="btn"
+          :class="confirmClass"
           :disabled="isLoading"
           @click="emit('onConfirmed')"
         >
@@ -77,7 +76,9 @@ onUnmounted(() => {
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button :disabled="isLoading">close</button>
+      <button :disabled="isLoading">
+        close
+      </button>
     </form>
   </dialog>
 </template>

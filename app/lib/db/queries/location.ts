@@ -72,33 +72,36 @@ export async function findLocation(slug: string, userId: number) {
       eq(location.userId, userId),
     ),
     with: {
-      locationLogs: true,
+      locationLogs: {
+        with: {
+          images: true,
+        },
+      },
     },
   });
 }
 
 export async function updateLocationBySlug(
   updates: InsertLocation,
-  slug:string,
-  userId:number,
-){
-  const [updated] = await db.update(location).set(updates)
-.where(and (
-      eq(location.slug, slug),
-      eq(location.userId, userId),
-    )).returning();
+  slug: string,
+  userId: number,
+) {
+  const [updated] = await db.update(location).set(updates).where(and (
+    eq(location.slug, slug),
+    eq(location.userId, userId),
+  )).returning();
   return updated;
 }
 
 export async function removeLocationBySlug(
-  slug:string,
-  userId:number,
-){
+  slug: string,
+  userId: number,
+) {
   const [removed] = await db.delete(location)
-.where(and (
+    .where(and (
       eq(location.slug, slug),
       eq(location.userId, userId),
-    )).returning();
+    ))
+    .returning();
   return removed;
 }
-

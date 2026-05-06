@@ -31,7 +31,13 @@ export default defineNuxtConfig({
       include: [
         "@vue/devtools-core",
         "@vue/devtools-kit",
+        "maplibre-gl",
       ],
+    },
+    server: {
+      watch: {
+        ignored: ["./docker-data/*"],
+      },
     },
   },
   colorMode: {
@@ -43,6 +49,12 @@ export default defineNuxtConfig({
     "/api/auth/**": {
       // @ts-expect-error - nuxt-csurf 模块的类型定义不完整
       csurf: false,
+    },
+  },
+  // 运行时配置
+  runtimeConfig: {
+    public: {
+      s3BucketUrl: process.env.S3_ENDPOINT ? `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}` : "",
     },
   },
 });

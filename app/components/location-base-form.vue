@@ -1,47 +1,45 @@
-<script lang="ts" setup>
+<script lang="ts" setup generic="T extends Record<string, any>">
 import type { FetchError } from "ofetch";
+import type { ZodSchema } from "zod";
 import { toTypedSchema } from "@vee-validate/zod";
 import { useForm } from "vee-validate";
-import { DEFAULT_CENTER } from "~/lib/constants";
-import { InsertLocation, type SelectLocation } from "~/lib/db/schema";
 import { extractShortLocationName, formatCoordinate } from "~/lib/location-utils";
 import { useMapStore } from "../../stores/map";
 
-interface Props {
+type Props = {
   mode?: "add" | "edit";
-  location?: SelectLocation | null; // 直接传入完整的 location 对象
+  validationSchema: ZodSchema<T>; // 验证 schema
+  initialValues: T; // 初始值
+  apiUrl: string; // API 端点 URL
   submitButtonText?: string;
   showCancel?: boolean;
-}
+  showLocationSearch?: boolean; // 是否显示地点搜索
+  coordinateLabel?: string; // 坐标提示文本
+};
 
-interface Emits {
-  (e: "submit", values: { name: string; description?: string; long: number; lat: number }): void;
+type Emits = {
+  (e: "submit", values: T): void;
   (e: "cancel"): void;
   (e: "success"): void;
   (e: "error", error: string): void;
-}
+};
 
 const props = withDefaults(defineProps<Props>(), {
   mode: "add",
-  location: null,
-  submitButtonText: "添加地点",
+  submitButtonText: "提交",
   showCancel: true,
+  showLocationSearch: false,
+  coordinateLabel: "设置位置",
 });
 
 const emit = defineEmits<Emits>();
-const route = useRoute();
 
 const { $csrfFetch } = useNuxtApp();
 const mapStore = useMapStore();
 
 const { handleSubmit, errors, meta, setFieldValue, controlledValues } = useForm({
-  validationSchema: toTypedSchema(InsertLocation),
-  initialValues: {
-    name: props.location?.name || "",
-    description: props.location?.description || "",
-    long: props.location?.long || DEFAULT_CENTER[0],
-    lat: props.location?.lat || DEFAULT_CENTER[1],
-  },
+  validationSchema: toTypedSchema(props.validationSchema),
+  initialValues: props.initialValues,
 });
 
 const loading = ref(false);
@@ -52,26 +50,18 @@ const onSubmit = handleSubmit(async (values) => {
   errorMessage.value = null;
 
   try {
-    if (props.mode === "edit") {
-      // 编辑模式：使用 PUT 方法更新
-      if (!props.location?.id) {
-        throw new Error("编辑模式下必须提供 location 对象");
-      }
-      
-      await $csrfFetch(`/api/locations/${route.params.slug}`, {
-        method: "PUT",
+    // If apiUrl is provided, make the API call
+    if (props.apiUrl) {
+      const method = props.mode === "edit" ? "PUT" : "POST";
+      await $csrfFetch(props.apiUrl, {
+        method,
         body: values,
       });
-    }
-    else {
-      // 添加模式：使用 POST 方法创建
-      await $csrfFetch("/api/location", {
-        method: "POST",
-        body: values,
-      });
+
+      emit("success");
     }
 
-    emit("success");
+    // Always emit submit event (parent can handle API call if apiUrl is empty)
     emit("submit", values);
   }
   catch (e) {
@@ -81,13 +71,13 @@ const onSubmit = handleSubmit(async (values) => {
     let message = "操作失败，请稍后重试";
 
     if (error.statusCode === 409) {
-      message = error.data?.statusMessage || error.statusMessage || "该地点已存在";
+      message = error.data?.statusMessage || error.statusMessage || "该资源已存在";
     }
     else if (error.statusCode === 422) {
       message = "请检查输入的数据是否正确";
     }
     else if (error.statusCode === 404) {
-      message = "地点不存在";
+      message = "资源不存在";
     }
 
     errorMessage.value = message;
@@ -101,8 +91,16 @@ const onSubmit = handleSubmit(async (values) => {
 // 同步地图标记位置到表单
 effect(() => {
   if (mapStore.addedPoint) {
-    setFieldValue("long", mapStore.addedPoint.long);
-    setFieldValue("lat", mapStore.addedPoint.lat);
+    // 只在坐标真正改变时才更新字段，避免触发不必要的 dirty 状态
+    const currentLong = controlledValues.value.long;
+    const currentLat = controlledValues.value.lat;
+
+    if (currentLong !== mapStore.addedPoint.long) {
+      setFieldValue("long", mapStore.addedPoint.long);
+    }
+    if (currentLat !== mapStore.addedPoint.lat) {
+      setFieldValue("lat", mapStore.addedPoint.lat);
+    }
   }
 });
 
@@ -122,11 +120,16 @@ function handleCancel() {
   emit("cancel");
 }
 
-// 暴露表单状态给父组件
+// 暴露表单状态和方法给父组件
 defineExpose({
   meta,
   loading,
   errorMessage,
+  errors,
+  controlledValues,
+  setFieldValue,
+  setLoading: (value: boolean) => { loading.value = value; },
+  setErrorMessage: (value: string | null) => { errorMessage.value = value; },
 });
 </script>
 
@@ -139,6 +142,13 @@ defineExpose({
     </div>
 
     <form class="flex flex-col gap-2" @submit.prevent="onSubmit">
+      <!-- 自定义字段插槽（在默认字段之前） -->
+      <slot
+        name="fields-before"
+        :errors="errors"
+        :loading="loading"
+      />
+
       <AppFormField
         label="名称"
         name="name"
@@ -153,8 +163,15 @@ defineExpose({
         :disabled="loading"
       />
 
-      <!-- 地点搜索组件 -->
-      <AppLocationSearch @select-location="handleLocationSelect" />
+      <!-- 自定义字段插槽（在默认字段之后） -->
+      <slot
+        name="fields-after"
+        :errors="errors"
+        :loading="loading"
+      />
+
+      <!-- 地点搜索组件（可选） -->
+      <AppLocationSearch v-if="showLocationSearch" @select-location="handleLocationSelect" />
 
       <div class="bg-base-200 rounded-lg p-4 space-y-2">
         <div class="flex items-center gap-2 text-sm">
@@ -163,7 +180,7 @@ defineExpose({
             class="text-info"
             size="20"
           />
-          <span class="font-medium">设置地点位置</span>
+          <span class="font-medium">{{ coordinateLabel }}</span>
         </div>
         <ul class="text-sm space-y-1 ml-7">
           <li class="flex items-center gap-1">

@@ -1,13 +1,13 @@
 import type { SidebarItem } from "./sidebar";
 import type { SelectLocationWithLog } from "~/lib/db/schema";
 import type { MapPoint } from "~/lib/types";
+import { CURRENT_LOCATION_PAGES, LOCATION_PAGES, LOG_DETAIL_PAGES } from "~/lib/constants";
 import { useMapStore } from "./map";
 import { useSidebarStore } from "./sidebar";
-import { CURRENT_LOCATION_PAGES, LOCATION_PAGES } from "~/lib/constants";
 
-interface LocationResponse extends MapPoint {
+type LocationResponse = {
   // 添加其他可能的字段
-}
+} & MapPoint;
 
 // const listLocationsInSidebar = new Set(["dashboard", "dashboard-add"]);
 
@@ -50,8 +50,36 @@ export const useLocationStore = defineStore("useLocationStore", () => {
       mapStore.setAllMapPoints(mapPoints);
     }
     else if (currentLocation.value && CURRENT_LOCATION_PAGES.has(route.name?.toString() || "")) {
-      sidebarStore.sidebarItems = [];
-      mapStore.mapPoints = [currentLocation.value];
+      // 在地点详情页显示日志列表（但不包括日志详情页面，因为那里由 dashboard.vue 管理）
+      const isLogDetailPage = LOG_DETAIL_PAGES.has(route.name?.toString() || "");
+
+      if (!isLogDetailPage && currentLocation.value.locationLogs && currentLocation.value.locationLogs.length > 0) {
+        const sidebarItems: SidebarItem[] = currentLocation.value.locationLogs.map(log => ({
+          id: `log-${log.id}`,
+          label: log.name,
+          icon: "tabler:map-pin-filled",
+          to: {
+            name: "dashboard-location-slug-logs-id-edit",
+            params: { slug: route.params.slug, id: log.id },
+          },
+          mapPoint: {
+            id: log.id,
+            name: log.name,
+            description: log.description || "",
+            lat: log.lat,
+            long: log.long,
+            slug: `${log.id}`,
+          },
+        }));
+
+        sidebarStore.sidebarItems = sidebarItems;
+      }
+      else if (!isLogDetailPage) {
+        // 没有日志时清空侧边栏项目（但不在日志详情页面清空）
+        sidebarStore.sidebarItems = [];
+      }
+
+      // 地图点在地点详情页面组件中设置
     }
     sidebarStore.loading = locationStatus.value === "pending";
   });

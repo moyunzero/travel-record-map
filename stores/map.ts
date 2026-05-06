@@ -82,7 +82,6 @@ export const useMapStore = defineStore("useMapStore", () => {
     watch(addedPoint, (newValue, oldValue) => {
       if (newValue && !oldValue) {
         // 首次添加点时飞行到该位置
-        console.log("flyTo addedPoint:", newValue.long, newValue.lat);
         setTimeout(() => {
           map.map?.flyTo({
             center: [newValue.long, newValue.lat],
@@ -108,7 +107,6 @@ export const useMapStore = defineStore("useMapStore", () => {
 
         // 只有坐标真正变化时才飞行
         if (newLat !== oldLat || newLong !== oldLong) {
-          console.log("flyTo updated addedPoint:", newLong, newLat);
           map.map?.flyTo({
             center: [newLong, newLat],
             speed: MAP_ANIMATION.SEARCH_SPEED,
