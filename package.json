@@ -14,7 +14,12 @@
     "typecheck": "vue-tsc --noEmit",
     "verify:tigris": "tsx scripts/verify-tigris.ts",
     "verify:r2": "tsx scripts/verify-r2.ts",
-    "setup:tigris-cors": "node scripts/setup-tigris-cors.js"
+    "setup:tigris-cors": "node scripts/setup-tigris-cors.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:push:prod": "NODE_ENV=production drizzle-kit push"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1043.0",

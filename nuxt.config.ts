@@ -53,8 +53,6 @@ export default defineNuxtConfig({
   },
   // 运行时配置
   runtimeConfig: {
-    public: {
-      s3BucketUrl: process.env.S3_ENDPOINT ? `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}` : "",
-    },
+    public: {},
   },
 });

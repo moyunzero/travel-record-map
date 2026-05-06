@@ -5,22 +5,58 @@ const props = defineProps<{
   images: SelectLocationLogImage[];
 }>();
 
-const config = useRuntimeConfig();
 const selectedImage = ref<string | null>(null);
 
-// 获取图片URL
+// 预签名 URL 缓存：key → signed URL
+const signedUrlMap = ref<Record<string, string>>({});
+const loadingUrls = ref(false);
+
+async function fetchSignedUrls(images: SelectLocationLogImage[]) {
+  if (!images.length)
+    return;
+
+  // 只请求还没有缓存的 key
+  const missing = images.map(i => i.key).filter(k => !signedUrlMap.value[k]);
+  if (!missing.length)
+    return;
+
+  const { $csrfFetch } = useNuxtApp();
+  loadingUrls.value = true;
+  try {
+    const results = await $csrfFetch<{ key: string; url: string }[]>("/api/images/sign", {
+      method: "POST",
+      body: { keys: missing },
+    });
+    for (const { key, url } of results) {
+      signedUrlMap.value[key] = url;
+    }
+  }
+  catch (e) {
+    console.error("获取图片签名 URL 失败", e);
+  }
+  finally {
+    loadingUrls.value = false;
+  }
+}
+
 function getImageUrl(image: SelectLocationLogImage): string {
-  const config = useRuntimeConfig();
-  return `${config.public.s3BucketUrl}/${image.key}`;
+  return signedUrlMap.value[image.key] || "";
 }
 
 function showImage(image: SelectLocationLogImage) {
-  selectedImage.value = getImageUrl(image);
+  const url = getImageUrl(image);
+  if (url)
+    selectedImage.value = url;
 }
 
 function closeGallery() {
   selectedImage.value = null;
 }
+
+// 监听 images 变化，自动获取签名 URL
+watch(() => props.images, (images) => {
+  fetchSignedUrls(images);
+}, { immediate: true });
 </script>
 
 <template>
@@ -32,7 +68,12 @@ function closeGallery() {
     >
       <!-- 图片容器 -->
       <div class="relative aspect-[4/3] overflow-hidden rounded-lg bg-base-300 shadow-md transition-all duration-300 hover:shadow-xl">
+        <!-- 加载中占位 -->
+        <div v-if="!getImageUrl(image)" class="size-full flex items-center justify-center">
+          <div class="loading loading-sm" />
+        </div>
         <img
+          v-else
           class="size-full object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
           :src="getImageUrl(image)"
           :alt="image.key"

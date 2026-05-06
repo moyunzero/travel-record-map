@@ -1,26 +1,15 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { findLocationLog } from "~/lib/db/queries/location-log";
-import env from "~/lib/env";
 import defineAuthenticatedEventHandler from "~/utils/define-authenticated-event-handler";
+import { s3Bucket, s3Client } from "~/utils/s3-client";
 
 // 请求体验证 schema
 const SignImageSchema = z.object({
   contentLength: z.number().min(1).max(10 * 1024 * 1024), // 最大 10MB
   checksum: z.string().min(1),
-});
-
-// 初始化 S3 客户端
-const s3Client = new S3Client({
-  region: env.S3_REGION,
-  endpoint: env.S3_ENDPOINT,
-  credentials: {
-    accessKeyId: env.S3_ACCESS_KEY,
-    secretAccessKey: env.S3_SECRET_KEY,
-  },
-  forcePathStyle: env.S3_ENDPOINT.includes("localhost") || env.S3_ENDPOINT.includes("127.0.0.1"), // 只有本地 MinIO 需要
 });
 
 export default defineAuthenticatedEventHandler(async (event) => {
@@ -57,7 +46,7 @@ export default defineAuthenticatedEventHandler(async (event) => {
   try {
     // 创建 PutObject 命令
     const command = new PutObjectCommand({
-      Bucket: env.S3_BUCKET,
+      Bucket: s3Bucket,
       Key: key,
       ContentType: "image/jpeg",
       ContentLength: contentLength,

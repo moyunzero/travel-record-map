@@ -1,18 +1,7 @@
-import { DeleteObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { deleteLocationLogImage, findLocationLogImage } from "~/lib/db/queries/location-log";
-import env from "~/lib/env";
 import defineAuthenticatedEventHandler from "~/utils/define-authenticated-event-handler";
-
-// 初始化 S3 客户端
-const s3Client = new S3Client({
-  region: env.S3_REGION,
-  endpoint: env.S3_ENDPOINT,
-  credentials: {
-    accessKeyId: env.S3_ACCESS_KEY,
-    secretAccessKey: env.S3_SECRET_KEY,
-  },
-  forcePathStyle: true, // MinIO 需要
-});
+import { s3Bucket, s3Client } from "~/utils/s3-client";
 
 export default defineAuthenticatedEventHandler(async (event) => {
   const imageId = getRouterParam(event, "imageId") as string;
@@ -30,7 +19,7 @@ export default defineAuthenticatedEventHandler(async (event) => {
   try {
     // 从 S3 删除文件
     const deleteCommand = new DeleteObjectCommand({
-      Bucket: env.S3_BUCKET,
+      Bucket: s3Bucket,
       Key: image.key,
     });
 
