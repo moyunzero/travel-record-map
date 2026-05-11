@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     "@vee-validate/nuxt",
     "nuxt-csurf",
     "nuxt-maplibre",
+    "@vercel/analytics",
   ],
   eslint: {
     config: {
